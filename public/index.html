@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <title>Assessment PM e-learning</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- UI minima -->
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background: #f7f7fb; color: #222; }
+    .container { max-width: 920px; margin: 24px auto; padding: 16px; background: #fff; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+    h1 { margin-top: 0; font-size: 24px; }
+    h2 { margin-top: 24px; font-size: 18px; }
+    .card { padding: 16px; border: 1px solid #eee; border-radius: 10px; margin: 12px 0; background: #fafafa; }
+    .grid { display: grid; gap: 12px; }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+    .options { display: grid; gap: 8px; margin-top: 8px; }
+    button { border: 0; padding: 10px 14px; border-radius: 10px; cursor: pointer; }
+    .primary { background: #2f6fed; color: #fff; }
+    .outline { background: #fff; border: 1px solid #ddd; }
+    .footer { margin-top: 24px; display: flex; gap: 12px; }
+    label { display: block; margin: 6px 0; }
+    input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
+    .muted { color: #666; font-size: 13px; }
+    .badge { display:inline-block; background:#eef3ff; color:#2f6fed; padding:2px 8px; border-radius:999px; font-size:12px; }
+    .sticky { position: sticky; bottom: 12px; background: #fff; padding: 8px; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+    .ok { color: #0a7f2e; }
+    .err { color: #b00020; }
+    .link { color: #2f6fed; text-decoration: none; }
+    hr { border: none; border-top: 1px solid #eee; margin: 20px 0; }
+    .radio { display:flex; align-items:center; gap:8px; padding:8px; border:1px solid #eaeaea; border-radius:8px; background:white; }
+    .header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  </style>
+  <!-- React via CDN + Babel per JSX in-browser -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div id="root"></div>
+  </div>
+
+  <script type="text/babel">
+
+    const { useState, useMemo } = React;
+
+    /** ===================== DOMANDE LOGICA ===================== */
+    const logicQuestions = [
+      { id: 'q1', text: 'Qual è il numero successivo nella sequenza: 2, 4, 8, 16, ?', options: ['30','32','34','28'] },
+      { id: 'q2', text: 'Serie: 1, 1, 2, 3, 5, 8, 13, ? (Fibonacci)', options: ['18','20','21','13'] },
+      { id: 'q3', text: 'Puzzle logico: se lo schema è A→B, B→C, C→D, quale viene dopo C?', options: ['A','B','C','D'] },
+      { id: 'q4', text: 'Calcolo: 9 + 9 + 9 = ?', options: ['26','27','28','29'] },
+      { id: 'q5', text: 'Calcolo: 3 × 4 = ?', options: ['10','11','12','13'] },
+      { id: 'q6', text: 'Risorse: 6 task richiedono 7h ciascuno, hai 3 persone full-time (7h). Giorni minimi?', options: ['3','2','1','42'] },
+      { id: 'q7', text: 'Ottimizzazione: 36 ore da allocare su 2 moduli eguali. Ore per modulo?', options: ['9','12','18','24'] },
+      { id: 'q8', text: 'Logica condizionale: "Se piove, porto l’ombrello". Piove. Porto l’ombrello? ', options: ['Vero','Falso'] }
+    ];
+    // NB: le chiavi corrette sono definite sul server.
+
+    /** ===================== SCENARI SOFT ===================== */
+    // Le opzioni sono A/B/C/D per allineamento con lo scoring server.
+    const softScenarios = [
+      { id:'s1', title:'Gestione del tempo', prompt:'Hai 4 task in scadenze diverse. Cosa fai per prima cosa?', options:[
+        {key:'A', label:'Classifico con matrice urgenza/importanza e timeboxing'},
+        {key:'B', label:'Parto dal task più breve'},
+        {key:'C', label:'Attendo dettagli ulteriori prima di iniziare'},
+        {key:'D', label:'Procedo in ordine cronologico semplice'}
+      ]},
+      { id:'s2', title:'Gestione del conflitto', prompt:'Due membri discutono animatamente su una soluzione tecnica.', options:[
+        {key:'A', label:'Convoco breve mediazione con regole di dialogo e outcome'},
+        {key:'B', label:'Parlo prima con il più senior'},
+        {key:'C', label:'Chiedo al team di votare'},
+        {key:'D', label:'Lascio che si raffreddino senza intervenire'}
+      ]},
+      { id:'s3', title:'Obiettivi & scadenze', prompt:'Scadenza ravvicinata e backlog in crescita: come procedi?', options:[
+        {key:'A', label:'Riallineo obiettivi SMART, ridefinisco priorità e milestone'},
+        {key:'B', label:'Chiedo straordinari a tutto il team'},
+        {key:'C', label:'Sposto la scadenza senza consulti'},
+        {key:'D', label:'Consegno solo ciò che è quasi pronto'}
+      ]},
+      { id:'s4', title:'Comunicazione', prompt:'Stakeholder non tecnici chiedono stato progetto.', options:[
+        {key:'A', label:'Creo un update visual con rischi, decisioni e impatti'},
+        {key:'B', label:'Invio i log del sistema'},
+        {key:'C', label:'Messaggio lungo in chat senza sintesi'},
+        {key:'D', label:'Rimando alla retro di fine sprint'}
+      ]},
+      { id:'s5', title:'Leadership', prompt:'Team demotivato dopo retro negativa.', options:[
+        {key:'A', label:'Rinforzo scopo, co-definisco next step e rimuovo impedimenti'},
+        {key:'B', label:'Assegno task without discussion'},
+        {key:'C', label:'Aspetto che passi'},
+        {key:'D', label:'Sostituisco chi ha performato peggio'}
+      ]},
+      { id:'s6', title:'Pianificazione', prompt:'Progetto multi-modulo con dipendenze critiche.', options:[
+        {key:'A', label:'Creo WBS, mappo rischi e buffer, baseline e check settimanali'},
+        {key:'B', label:'Piano alto livello e si vede in corso d’opera'},
+        {key:'C', label:'Pianifico volta per volta'},
+        {key:'D', label:'Nessun piano, massima flessibilità'}
+      ]},
+      { id:'s7', title:'Adattabilità', prompt:'Cambio requisiti a metà sprint.', options:[
+        {key:'A', label:'Rinegozio scope con Product/Stakeholder e ricalibro obiettivi'},
+        {key:'B', label:'Ignoro il cambio fino allo sprint successivo'},
+        {key:'C', label:'Fermo tutto e riparto da zero'},
+        {key:'D', label:'Accetto tutto senza rinegoziare tempi'}
+      ]},
+      { id:'s8', title:'Stakeholder', prompt:'Nuovo sponsor con priorità differenti.', options:[
+        {key:'A', label:'Onboarding mirato, allineo aspettative e reporting'},
+        {key:'B', label:'Invio email generica di benvenuto'},
+        {key:'C', label:'Rimando il confronto a data da destinarsi'},
+        {key:'D', label:'Ignoro il cambiamento'}
+      ]}
+    ];
+
+    /** ===================== APP ===================== */
+
+    function RadioRow({name, value, onChange, opt}) {
+      return (
+        <label className="radio">
+          <input
+            type="radio"
+            name={name}
+            value={opt.key || opt}
+            checked={value === (opt.key || opt)}
+            onChange={e => onChange(e.target.value)}
+          />
+          <span>{opt.label || opt}</span>
+        </label>
+      );
+    }
+
+    function LogicBlock({ onDone }) {
+      const [answers, setAnswers] = useState({});
+
+      const allAnswered = logicQuestions.every(q => answers[q.id]);
+
+      return (
+        <div className="card">
+          <h2>Giochi di Logica <span className="badge">{logicQuestions.length} domande</span></h2>
+          {logicQuestions.map(q => (
+            <div key={q.id} style={{margin:'14px 0'}}>
+              <div><strong>{q.text}</strong></div>
+              <div className="options grid grid-2">
+                {q.options.map(opt => (
+                  <RadioRow
+                    key={opt}
+                    name={q.id}
+                    value={answers[q.id] || ''}
+                    onChange={(v) => setAnswers(a => ({...a, [q.id]: v}))}
+                    opt={{key: opt, label: opt}}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+          <div className="footer">
+            <button className="primary" disabled={!allAnswered} onClick={() => onDone(answers)}>Conferma sezione</button>
+            <span className="muted">{allAnswered ? 'Pronto a procedere' : 'Rispondi a tutte le domande'}</span>
+          </div>
+        </div>
+      );
+    }
+
+    function SoftBlock({ onDone }) {
+      const [answers, setAnswers] = useState({});
+      const allAnswered = softScenarios.every(s => answers[s.id]);
+
+      return (
+        <div className="card">
+          <h2>Competenze Soft (Gamificate) <span className="badge">{softScenarios.length} scenari</span></h2>
+          {softScenarios.map(s => (
+            <div key={s.id} style={{margin:'14px 0'}}>
+              <div><strong>{s.title}:</strong> {s.prompt}</div>
+              <div className="options">
+                {s.options.map(opt => (
+                  <RadioRow
+                    key={opt.key}
+                    name={s.id}
+                    value={answers[s.id] || ''}
+                    onChange={(v) => setAnswers(a => ({...a, [s.id]: v}))}
+                    opt={opt}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+          <div className="footer">
+            <button className="primary" disabled={!allAnswered} onClick={() => onDone(answers)}>Conferma sezione</button>
+            <span className="muted">{allAnswered ? 'Pronto a inviare' : 'Completa tutti gli scenari'}</span>
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [step, setStep] = useState(0);
+      const [candidate, setCandidate] = useState({ name:'', email:'' });
+      const [logic, setLogic] = useState(null);
+      const [soft, setSoft] = useState(null);
+      const [result, setResult] = useState(null);
+      const [startTs] = useState(Date.now());
+      const baseUrl = '';
+
+      const canStart = candidate.name.trim().length > 1;
+
+      const sendAll = async () => {
+        const body = {
+          candidate,
+          answers: { logic, soft },
+          meta: {
+            durationSec: Math.round((Date.now() - startTs) / 1000),
+            userAgent: navigator.userAgent
+          }
+        };
+        const res = await fetch(baseUrl + '/api/submit', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          body: JSON.stringify(body)
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(()=>({error:'Errore invio'}));
+          throw new Error(err.error || 'Errore invio');
+        }
+        return await res.json();
+      };
+
+      return (
+        <>
+          <div className="header">
+            <h1>Assessment Project Manager (e-learning) • <span className="muted">Prototipo</span></h1>
+            <span className="badge">No install</span>
+          </div>
+          <hr/>
+
+          {step === 0 && (
+            <div className="card">
+              <h2>Dati Candidato</h2>
+              <div className="grid grid-2">
+                <label>Nome e Cognome
+                  <input value={candidate.name} onChange={e => setCandidate(c => ({...c, name: e.target.value}))} placeholder="Es. Maria Rossi" />
+                </label>
+                <label>Email (facoltativa)
+                  <input value={candidate.email} onChange={e => setCandidate(c => ({...c, email: e.target.value}))} placeholder="maria.rossi@example.com" />
+                </label>
+              </div>
+              <div className="footer">
+                <button className="primary" disabled={!canStart} onClick={() => setStep(1)}>Inizia</button>
+                <span className="muted">Tempo stimato: 12–15 minuti</span>
+              </div>
+            </div>
+          )}
+
+          {step === 1 && <LogicBlock onDone={(ans) => { setLogic(ans); setStep(2); }} />}
+          {step === 2 && <SoftBlock onDone={(ans) => { setSoft(ans); setStep(3); }} />}
+
+          {step === 3 && (
+            <div className="card sticky">
+              <div style={{display:'flex', gap:12, alignItems:'center', justifyContent:'space-between', flexWrap:'wrap'}}>
+                <div>
+                  <strong>Pronto all’invio</strong>
+                  <div className="muted">Le risposte saranno valutate e verrà generato un PDF con indicatori e descrizioni.</div>
+                </div>
+                <button className="primary" onClick={async () => {
+                  try {
+                    const out = await sendAll();
+                    setResult(out);
+                    setStep(4);
+                  } catch (e) {
+                    alert(e.message);
+                  }
+                }}>Invia e genera report</button>
+              </div>
+            </div>
+          )}
+
+          {step === 4 && result && (
+            <div className="card">
+              <h2>Risultato inviato <span className="ok">✓</span></h2>
+              <p className="muted">Report creato. Puoi aprire il PDF o condividerne il link.</p>
+              <p><a className="link" href={result.pdfUrl} target="_blank" rel="noreferrer">Apri il PDF del report</a></p>
+              {result.summary && (
+                <>
+                  <h3>Anteprima sintetica</h3>
+                  <div className="muted">{result.summary.narrative}</div>
+                </>
+              )}
+              <div className="footer">
+                <button className="outline" onClick={() => { window.location.href='/' }}>Nuova valutazione</button>
+              </div>
+            </div>
+          )}
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
+</body>
+</html>

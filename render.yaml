@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: recruiting-assessment
+    env: node
+    region: frankfurt
+    plan: free
+    buildCommand: "npm install"
+    startCommand: "node server.js"
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false  # la imposterai dal pannello Render

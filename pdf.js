@@ -11,6 +11,12 @@ function addKeyValue(doc, key, value) {
   doc.font('Helvetica').text(value);
 }
 
+function avgMs(map) {
+  const vals = Object.values(map || {});
+  if (!vals.length) return 0;
+  return Math.round(vals.reduce((a,b)=>a+b,0) / vals.length);
+}
+
 async function buildPdfBuffer(report) {
   return new Promise((resolve, reject) => {
     try {
@@ -22,8 +28,7 @@ async function buildPdfBuffer(report) {
       const { candidate, scored, meta, id } = report;
       const { logic, soft, indices, summary } = scored;
 
-      // Header
-      doc.font('Helvetica-Bold').fontSize(18).text('Valutazione Selezione — Project Manager e-learning', { align: 'left' });
+      doc.font('Helvetica-Bold').fontSize(18).text('Valutazione Selezione — Project Manager e-learning');
       doc.moveDown(0.5);
       doc.font('Helvetica').fontSize(10)
         .text(`ID Report: ${id}`)
@@ -32,19 +37,15 @@ async function buildPdfBuffer(report) {
         .text(`Durata test (sec): ${meta?.durationSec ?? 'n.d.'}`);
       doc.moveDown(1);
 
-      // Indici sintetici
       addSectionTitle(doc, 'Indicatori sintetici');
-      doc.fontSize(12);
       addKeyValue(doc, 'Indice Cognitivo', `${indices.cognitiveIndex}/100`);
       addKeyValue(doc, 'Indice Manageriale', `${indices.managerialIndex}/100`);
       addKeyValue(doc, 'Indice Interpersonale', `${indices.interpersonalIndex}/100`);
       addKeyValue(doc, 'Valutazione complessiva', `${indices.overall}/100`);
 
-      // Narrativa
       addSectionTitle(doc, 'Sintesi descrittiva');
-      doc.fontSize(11).text(summary.narrative, { align: 'left' });
+      doc.text(summary.narrative, { align: 'left' });
 
-      // Dettaglio dimensioni cognitive
       addSectionTitle(doc, 'Dettaglio capacità cognitive');
       doc.list([
         `${COGNITIVE.LOGIC}: ${logic[COGNITIVE.LOGIC]}/100 — ${summary.perDimension[COGNITIVE.LOGIC]}`,
@@ -52,22 +53,26 @@ async function buildPdfBuffer(report) {
         `${COGNITIVE.PROB}: ${logic[COGNITIVE.PROB]}/100 — ${summary.perDimension[COGNITIVE.PROB]}`
       ], { bulletRadius: 2 });
 
-      // Dettaglio soft
       addSectionTitle(doc, 'Dettaglio competenze manageriali e interpersonali');
-      const softList = Object.values(SOFT).map(dim =>
-        `${dim}: ${soft[dim]}/100 — ${summary.perDimension[dim]}`
-      );
+      const softList = Object.keys(soft)
+        .filter(k => k !== 'details')
+        .map(dim => `${dim}: ${soft[dim]}/100 — ${summary.perDimension[dim]}`);
       doc.list(softList, { bulletRadius: 2 });
 
-      // Footer
+      // Tempi per item
+      addSectionTitle(doc, 'Tempi di risposta (ms)');
+      const avgLogic = avgMs(meta?.times?.logic || {});
+      const avgSoft  = avgMs(meta?.times?.soft || {});
+      addKeyValue(doc, 'Tempo medio domande logiche', `${avgLogic} ms`);
+      addKeyValue(doc, 'Tempo medio scenari soft', `${avgSoft} ms`);
+
       doc.moveDown(1);
       doc.fontSize(9).fillColor('#666')
-        .text('Questo report è generato automaticamente a partire da scenari standardizzati e punteggi normalizzati su scala 0–100.', { align: 'left' });
+        .text('Report generato automaticamente da scenari standardizzati; punteggi su scala 0–100.', { align: 'left' });
       doc.end();
-    } catch (e) {
-      reject(e);
-    }
+    } catch (e) { reject(e); }
   });
 }
 
 module.exports = { buildPdfBuffer };
+

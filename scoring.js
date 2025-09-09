@@ -1,17 +1,9 @@
-/**
- * Banca domande & chiavi di scoring
- * Nota: nel prototipo le domande sono renderizzate in front-end con stessi ID.
- * Qui definiamo le chiavi di valutazione per calcolare gli indicatori.
- */
-
-/** Indicatori cognitivi */
 const COGNITIVE = {
   LOGIC: 'Capacità Logica',
   NUM: 'Calcolo Numerico',
   PROB: 'Problem Solving'
 };
 
-/** Indicatori manageriali/interpersonali */
 const SOFT = {
   TIME: 'Gestione del Tempo',
   CONFLICT: 'Gestione del Conflitto',
@@ -23,258 +15,161 @@ const SOFT = {
   STAKE: 'Gestione Stakeholder'
 };
 
-/** Punteggio massimo target per normalizzazione */
-const MAX_PER_LOGIC = 8; // 8 domande logiche totali nel prototipo
-const MAX_SOFT_SCORE = 100; // soft già in scala 0-100
-
-/**
- * Chiavi corrette per logica: { qid: { correct: 'option', weight?: number, dim: 'LOGIC|NUM|PROB' } }
- */
 const logicKeys = {
-  // Sequenze / Logica
   q1: { correct: '32', weight: 1, dim: COGNITIVE.LOGIC },
-  q2: { correct: '13', weight: 1, dim: COGNITIVE.LOGIC },
-  q3: { correct: 'D', weight: 1, dim: COGNITIVE.LOGIC }, // puzzle visivo astratto
-  // Calcolo rapido
-  q4: { correct: '27', weight: 1, dim: COGNITIVE.NUM },
-  q5: { correct: '12', weight: 1, dim: COGNITIVE.NUM },
-  // Problem solving numerico
-  q6: { correct: '42', weight: 1, dim: COGNITIVE.PROB },
-  q7: { correct: '18', weight: 1, dim: COGNITIVE.PROB },
-  // Logica condizionale
+  q2: { correct: '21', weight: 1, dim: COGNITIVE.LOGIC },
+  q3: { correct: 'D',  weight: 1, dim: COGNITIVE.LOGIC },
+  q4: { correct: '27', weight: 1, dim: COGNITIVE.NUM   },
+  q5: { correct: '12', weight: 1, dim: COGNITIVE.NUM   },
+  q6: { correct: '2',  weight: 1, dim: COGNITIVE.PROB  }, // 6*7=42h, 3pers*7h=21h/g → 2 giorni
+  q7: { correct: '18', weight: 1, dim: COGNITIVE.PROB  },
   q8: { correct: 'Vero', weight: 1, dim: COGNITIVE.LOGIC }
 };
 
-/**
- * Mapping soft skill: ogni scenario (sid) assegna pesi (0..3) alle dimensioni SOFT.
- * Le opzioni sono 'A','B','C','D' coerenti con il front-end.
- * Il punteggio finale per dimensione viene normalizzato in 0-100.
- */
 const softKeys = {
-  // TIME
-  s1: {
-    // Prioritizzazione task simultanei
-    A: { [SOFT.TIME]: 3, [SOFT.PLAN]: 2 }, // Matrice Eisenhower + timeboxing
-    B: { [SOFT.TIME]: 2 },
-    C: { [SOFT.TIME]: 1 },
-    D: { [SOFT.TIME]: 0 }
-  },
-  // CONFLICT
-  s2: {
-    A: { [SOFT.CONFLICT]: 3, [SOFT.COMM]: 2 }, // mediazione strutturata
-    B: { [SOFT.CONFLICT]: 2 },
-    C: { [SOFT.CONFLICT]: 1 },
-    D: { [SOFT.CONFLICT]: 0 }
-  },
-  // GOALS & DEADLINES
-  s3: {
-    A: { [SOFT.GOALS]: 3, [SOFT.PLAN]: 2 },
-    B: { [SOFT.GOALS]: 2 },
-    C: { [SOFT.GOALS]: 1 },
-    D: { [SOFT.GOALS]: 0 }
-  },
-  // COMM
-  s4: {
-    A: { [SOFT.COMM]: 3, [SOFT.STAKE]: 2 },
-    B: { [SOFT.COMM]: 2 },
-    C: { [SOFT.COMM]: 1 },
-    D: { [SOFT.COMM]: 0 }
-  },
-  // LEAD
-  s5: {
-    A: { [SOFT.LEAD]: 3, [SOFT.ADAPT]: 1 },
-    B: { [SOFT.LEAD]: 2 },
-    C: { [SOFT.LEAD]: 1 },
-    D: { [SOFT.LEAD]: 0 }
-  },
-  // PLAN
-  s6: {
-    A: { [SOFT.PLAN]: 3, [SOFT.TIME]: 1 },
-    B: { [SOFT.PLAN]: 2 },
-    C: { [SOFT.PLAN]: 1 },
-    D: { [SOFT.PLAN]: 0 }
-  },
-  // ADAPT
-  s7: {
-    A: { [SOFT.ADAPT]: 3, [SOFT.GOALS]: 1 },
-    B: { [SOFT.ADAPT]: 2 },
-    C: { [SOFT.ADAPT]: 1 },
-    D: { [SOFT.ADAPT]: 0 }
-  },
-  // STAKE
-  s8: {
-    A: { [SOFT.STAKE]: 3, [SOFT.COMM]: 1 },
-    B: { [SOFT.STAKE]: 2 },
-    C: { [SOFT.STAKE]: 1 },
-    D: { [SOFT.STAKE]: 0 }
-  }
+  s1: { A:{ 'Gestione del Tempo':3, 'Pianificazione & Organizzazione':2 }, B:{ 'Gestione del Tempo':2 }, C:{ 'Gestione del Tempo':1 }, D:{ 'Gestione del Tempo':0 } },
+  s2: { A:{ 'Gestione del Conflitto':3, 'Comunicazione':2 }, B:{ 'Gestione del Conflitto':2 }, C:{ 'Gestione del Conflitto':1 }, D:{ 'Gestione del Conflitto':0 } },
+  s3: { A:{ 'Obiettivi & Scadenze':3, 'Pianificazione & Organizzazione':2 }, B:{ 'Obiettivi & Scadenze':2 }, C:{ 'Obiettivi & Scadenze':1 }, D:{ 'Obiettivi & Scadenze':0 } },
+  s4: { A:{ 'Comunicazione':3, 'Gestione Stakeholder':2 }, B:{ 'Comunicazione':2 }, C:{ 'Comunicazione':1 }, D:{ 'Comunicazione':0 } },
+  s5: { A:{ 'Leadership':3, 'Adattabilità':1 }, B:{ 'Leadership':2 }, C:{ 'Leadership':1 }, D:{ 'Leadership':0 } },
+  s6: { A:{ 'Pianificazione & Organizzazione':3, 'Gestione del Tempo':1 }, B:{ 'Pianificazione & Organizzazione':2 }, C:{ 'Pianificazione & Organizzazione':1 }, D:{ 'Pianificazione & Organizzazione':0 } },
+  s7: { A:{ 'Adattabilità':3, 'Obiettivi & Scadenze':1 }, B:{ 'Adattabilità':2 }, C:{ 'Adattabilità':1 }, D:{ 'Adattabilità':0 } },
+  s8: { A:{ 'Gestione Stakeholder':3, 'Comunicazione':1 }, B:{ 'Gestione Stakeholder':2 }, C:{ 'Gestione Stakeholder':1 }, D:{ 'Gestione Stakeholder':0 } }
 };
 
-/**
- * Descrittori testuali per bande di punteggio (0-39; 40-59; 60-79; 80-100)
- */
 const descriptors = {
   [COGNITIVE.LOGIC]: [
-    [0, 39, 'Base: riconosce pattern semplici; necessita di guida su regole multi-step.'],
-    [40, 59, 'In sviluppo: individua regole comuni con velocità discreta.'],
-    [60, 79, 'Solida: deduce regole complesse con buona accuratezza.'],
-    [80, 100, 'Avanzata: eccellente astrazione e velocità inferenziale.']
+    [0,39,'Base: riconosce pattern semplici; necessita di guida su regole multi-step.'],
+    [40,59,'In sviluppo: individua regole comuni con velocità discreta.'],
+    [60,79,'Solida: deduce regole complesse con buona accuratezza.'],
+    [80,100,'Avanzata: eccellente astrazione e velocità inferenziale.']
   ],
   [COGNITIVE.NUM]: [
-    [0, 39, 'Base: calcolo accurato solo con tempi ampi.'],
-    [40, 59, 'In sviluppo: buono su operazioni standard, talvolta imprecisioni sotto pressione.'],
-    [60, 79, 'Solida: affidabile su stime e calcoli multi-step.'],
-    [80, 100, 'Avanzata: rapidità e precisione anche in scenari complessi.']
+    [0,39,'Base: calcolo accurato solo con tempi ampi.'],
+    [40,59,'In sviluppo: buono su operazioni standard, talvolta imprecisioni sotto pressione.'],
+    [60,79,'Solida: affidabile su stime e calcoli multi-step.'],
+    [80,100,'Avanzata: rapidità e precisione anche in scenari complessi.']
   ],
   [COGNITIVE.PROB]: [
-    [0, 39, 'Base: fatica a modellare vincoli e trade-off.'],
-    [40, 59, 'In sviluppo: risolve problemi con guida e schemi chiari.'],
-    [60, 79, 'Solida: scompone problemi e trova soluzioni pratiche.'],
-    [80, 100, 'Avanzata: ottimizza con approccio sistemico e creatività.']
+    [0,39,'Base: fatica a modellare vincoli e trade-off.'],
+    [40,59,'In sviluppo: risolve problemi con guida e schemi chiari.'],
+    [60,79,'Solida: scompone problemi e trova soluzioni pratiche.'],
+    [80,100,'Avanzata: ottimizza con approccio sistemico e creatività.']
   ],
-  [SOFT.TIME]: [
-    [0, 39, 'Prioritizzazione poco strutturata; rischi di slittamento.'],
-    [40, 59, 'Pianifica con check periodici; margini di miglioramento sul timeboxing.'],
-    [60, 79, 'Gestione tempi efficace con buffer e milestone.'],
-    [80, 100, 'Mastery: pianifica, protegge tempo, comunica dipendenze.']
+  'Gestione del Tempo': [
+    [0,39,'Prioritizzazione poco strutturata; rischi di slittamento.'],
+    [40,59,'Pianifica con check periodici; margini di miglioramento sul timeboxing.'],
+    [60,79,'Gestione tempi efficace con buffer e milestone.'],
+    [80,100,'Mastery: pianifica, protegge tempo, comunica dipendenze.']
   ],
-  [SOFT.CONFLICT]: [
-    [0, 39, 'Evita/ritarda; conflitti si cronicizzano.'],
-    [40, 59, 'Interviene ma senza metodo costante.'],
-    [60, 79, 'Media con ascolto attivo e neutralità.'],
-    [80, 100, 'Previene, media e consolida accordi sostenibili.']
+  'Gestione del Conflitto': [
+    [0,39,'Evita/ritarda; conflitti si cronicizzano.'],
+    [40,59,'Interviene ma senza metodo costante.'],
+    [60,79,'Media con ascolto attivo e neutralità.'],
+    [80,100,'Previene, media e consolida accordi sostenibili.']
   ],
-  [SOFT.GOALS]: [
-    [0, 39, 'Obiettivi vaghi; tracking limitato.'],
-    [40, 59, 'Usa obiettivi SMART ma con follow-up irregolare.'],
-    [60, 79, 'Definisce KPI, scadenze e controlli cadenzati.'],
-    [80, 100, 'Allinea roadmap e value delivery, governa rischi.']
+  'Obiettivi & Scadenze': [
+    [0,39,'Obiettivi vaghi; tracking limitato.'],
+    [40,59,'Usa obiettivi SMART ma con follow-up irregolare.'],
+    [60,79,'Definisce KPI, scadenze e controlli cadenzati.'],
+    [80,100,'Allinea roadmap e value delivery, governa rischi.']
   ],
-  [SOFT.COMM]: [
-    [0, 39, 'Messaggi lunghi/ambigui; poco adattamento audience.'],
-    [40, 59, 'Chiarezza discreta; migliorabile su sintesi e aspettative.'],
-    [60, 79, 'Comunicazione chiara, bidirezionale, documentata.'],
-    [80, 100, 'Storytelling mirato, gestione aspettative esemplare.']
+  'Comunicazione': [
+    [0,39,'Messaggi lunghi/ambigui; poco adattamento audience.'],
+    [40,59,'Chiarezza discreta; migliorabile su sintesi e aspettative.'],
+    [60,79,'Comunicazione chiara, bidirezionale, documentata.'],
+    [80,100,'Storytelling mirato, gestione aspettative esemplare.']
   ],
-  [SOFT.LEAD]: [
-    [0, 39, 'Direttività o laissez-faire; poca ownership.'],
-    [40, 59, 'Leadership situazionale in crescita.'],
-    [60, 79, 'Coinvolge, delega, rimuove impedimenti.'],
-    [80, 100, 'Ispira, sviluppa talenti, orienta ai risultati.']
+  'Leadership': [
+    [0,39,'Direttività o laissez-faire; poca ownership.'],
+    [40,59,'Leadership situazionale in crescita.'],
+    [60,79,'Coinvolge, delega, rimuove impedimenti.'],
+    [80,100,'Ispira, sviluppa talenti, orienta ai risultati.']
   ],
-  [SOFT.PLAN]: [
-    [0, 39, 'Pianificazione reattiva; scarsa gestione dipendenze.'],
-    [40, 59, 'Roadmap presente ma poco aggiornata.'],
-    [60, 79, 'WBS, rischi, buffer e baseline curati.'],
-    [80, 100, 'Eccellenza su pianificazione e controllo esecuzione.']
+  'Pianificazione & Organizzazione': [
+    [0,39,'Pianificazione reattiva; scarsa gestione dipendenze.'],
+    [40,59,'Roadmap presente ma poco aggiornata.'],
+    [60,79,'WBS, rischi, buffer e baseline curati.'],
+    [80,100,'Eccellenza su pianificazione e controllo esecuzione.']
   ],
-  [SOFT.ADAPT]: [
-    [0, 39, 'Resistenza al cambiamento.'],
-    [40, 59, 'Si adatta con tempi medio-lunghi.'],
-    [60, 79, 'Ricalibra rapidamente con apprendimento continuo.'],
-    [80, 100, 'Anticipa cambi e capitalizza le novità.']
+  'Adattabilità': [
+    [0,39,'Resistenza al cambiamento.'],
+    [40,59,'Si adatta con tempi medio-lunghi.'],
+    [60,79,'Ricalibra rapidamente con apprendimento continuo.'],
+    [80,100,'Anticipa cambi e capitalizza le novità.']
   ],
-  [SOFT.STAKE]: [
-    [0, 39, 'Coinvolgimento stakeholder sporadico.'],
-    [40, 59, 'Mappa interessi ma con follow-up irregolari.'],
-    [60, 79, 'Gestione aspettative e reporting regolare.'],
-    [80, 100, 'Governance relazionale strategica e proattiva.']
+  'Gestione Stakeholder': [
+    [0,39,'Coinvolgimento stakeholder sporadico.'],
+    [40,59,'Mappa interessi ma con follow-up irregolari.'],
+    [60,79,'Gestione aspettative e reporting regolare.'],
+    [80,100,'Governance relazionale strategica e proattiva.']
   ]
 };
 
-/** Bande e profilo sintetico finale */
 function describe(dim, score) {
   const bands = descriptors[dim];
-  for (const [min, max, text] of bands) {
-    if (score >= min && score <= max) return text;
-  }
+  for (const [min, max, text] of bands) if (score >= min && score <= max) return text;
   return '';
 }
 
-/** Calcolo logica: restituisce punteggi per LOGIC/NUM/PROB in scala 0-100 */
 function scoreLogic(logicAnswers) {
-  let tally = { [COGNITIVE.LOGIC]: 0, [COGNITIVE.NUM]: 0, [COGNITIVE.PROB]: 0 };
-  let max = { [COGNITIVE.LOGIC]: 0, [COGNITIVE.NUM]: 0, [COGNITIVE.PROB]: 0 };
+  const tally = { [COGNITIVE.LOGIC]:0, [COGNITIVE.NUM]:0, [COGNITIVE.PROB]:0 };
+  const max   = { [COGNITIVE.LOGIC]:0, [COGNITIVE.NUM]:0, [COGNITIVE.PROB]:0 };
 
   for (const qid of Object.keys(logicKeys)) {
-    const key = logicKeys[qid];
-    const weight = key.weight || 1;
-    max[key.dim] += weight;
-    const answer = (logicAnswers[qid] ?? '').toString();
-    if (answer === key.correct) {
-      tally[key.dim] += weight;
-    }
+    const k = logicKeys[qid];
+    const w = k.weight || 1;
+    max[k.dim] += w;
+    const ans = (logicAnswers[qid] ?? '').toString();
+    if (ans === k.correct) tally[k.dim] += w;
   }
 
-  const logicScore = Math.round((tally[COGNITIVE.LOGIC] / (max[COGNITIVE.LOGIC] || 1)) * 100);
-  const numScore   = Math.round((tally[COGNITIVE.NUM]   / (max[COGNITIVE.NUM]   || 1)) * 100);
-  const probScore  = Math.round((tally[COGNITIVE.PROB]  / (max[COGNITIVE.PROB]  || 1)) * 100);
+  const toPct = (num, den) => Math.round((num / (den || 1)) * 100);
 
   return {
-    [COGNITIVE.LOGIC]: logicScore,
-    [COGNITIVE.NUM]: numScore,
-    [COGNITIVE.PROB]: probScore,
+    [COGNITIVE.LOGIC]: toPct(tally[COGNITIVE.LOGIC], max[COGNITIVE.LOGIC]),
+    [COGNITIVE.NUM]:   toPct(tally[COGNITIVE.NUM],   max[COGNITIVE.NUM]),
+    [COGNITIVE.PROB]:  toPct(tally[COGNITIVE.PROB],  max[COGNITIVE.PROB]),
     details: { tally, max }
   };
 }
 
-/** Calcolo soft: normalizza su 0-100 per dimensione */
 function scoreSoft(softAnswers) {
-  // Max teorico per dimensione = numero di volte in cui la dimensione appare * 3
   const tally = {};
   const cap = {};
 
   for (const sid of Object.keys(softKeys)) {
     const opt = (softAnswers[sid] || '').toUpperCase();
     const map = softKeys[sid][opt] || {};
-    // incrementa caps (massimi) per tutte le dimensioni che appaiono nello scenario
-    for (const d of new Set([
-      ...Object.keys(softKeys[sid]['A'] || {}),
-      ...Object.keys(softKeys[sid]['B'] || {}),
-      ...Object.keys(softKeys[sid]['C'] || {}),
-      ...Object.keys(softKeys[sid]['D'] || {})
-    ])) {
-      cap[d] = (cap[d] || 0) + 3;
-    }
-    // incrementa tally per le dimensioni toccate dalla scelta
-    for (const d of Object.keys(map)) {
-      tally[d] = (tally[d] || 0) + map[d];
-    }
+    const allDims = new Set([
+      ...Object.keys(softKeys[sid]['A']||{}),
+      ...Object.keys(softKeys[sid]['B']||{}),
+      ...Object.keys(softKeys[sid]['C']||{}),
+      ...Object.keys(softKeys[sid]['D']||{})
+    ]);
+    for (const d of allDims) cap[d] = (cap[d] || 0) + 3;
+    for (const d of Object.keys(map)) tally[d] = (tally[d] || 0) + map[d];
   }
 
-  const dims = Object.values(SOFT);
-  const result = {};
-  for (const d of dims) {
-    const num = tally[d] || 0;
-    const den = cap[d] || 1;
-    result[d] = Math.round((num / den) * 100);
-  }
-
-  return { ...result, details: { tally, cap } };
+  const dims = Object.keys(cap);
+  const out = {};
+  for (const d of dims) out[d] = Math.round(((tally[d] || 0) / (cap[d] || 1)) * 100);
+  return { ...out, details: { tally, cap } };
 }
 
-/** Indici aggregati + valutazione complessiva */
 function aggregateIndices(logic, soft) {
-  const avg = arr => Math.round(arr.reduce((a, b) => a + b, 0) / (arr.length || 1));
+  const avg = arr => Math.round(arr.reduce((a,b)=>a+b,0) / (arr.length||1));
+  const cognitiveIndex    = avg([logic[COGNITIVE.LOGIC], logic[COGNITIVE.NUM], logic[COGNITIVE.PROB]]);
+  const managerialIndex   = avg([soft['Leadership'], soft['Pianificazione & Organizzazione'], soft['Gestione Stakeholder'], soft['Obiettivi & Scadenze']]);
+  const interpersonalIndex= avg([soft['Comunicazione'], soft['Gestione del Conflitto'], soft['Adattabilità'], soft['Gestione del Tempo']]);
 
-  const cognitiveIndex = avg([logic[COGNITIVE.LOGIC], logic[COGNITIVE.NUM], logic[COGNITIVE.PROB]]);
-  const managerialIndex = avg([soft[SOFT.LEAD], soft[SOFT.PLAN], soft[SOFT.STAKE], soft[SOFT.GOALS]]);
-  const interpersonalIndex = avg([soft[SOFT.COMM], soft[SOFT.CONFLICT], soft[SOFT.ADAPT], soft[SOFT.TIME]]);
-
-  // Pesi esempio (puoi regolarli): 45% cognitivo, 35% manageriale, 20% interpersonale
-  const overall = Math.round(
-    cognitiveIndex * 0.45 + managerialIndex * 0.35 + interpersonalIndex * 0.20
-  );
-
+  const overall = Math.round(cognitiveIndex*0.45 + managerialIndex*0.35 + interpersonalIndex*0.20);
   return { cognitiveIndex, managerialIndex, interpersonalIndex, overall };
 }
 
-/** Profilo testuale sintetico (personalità/approccio manageriale in chiave professionale) */
 function overallNarrative(indices) {
   const { cognitiveIndex, managerialIndex, interpersonalIndex, overall } = indices;
-
-  const band = s => (s >= 80 ? 'eccellente' : s >= 60 ? 'solido' : s >= 40 ? 'in sviluppo' : 'base');
-
+  const band = s => (s>=80?'eccellente':s>=60?'solido':s>=40?'in sviluppo':'base');
   return (
     `Valutazione complessiva: ${overall}/100. ` +
     `Cognitivo ${cognitiveIndex}/100 (${band(cognitiveIndex)}), ` +
@@ -286,28 +181,17 @@ function overallNarrative(indices) {
   );
 }
 
-/** Descrizioni per ogni dimensione */
 function dimensionDescriptions(scores) {
-  const dims = {
-    ...scores.logicDims,
-    ...scores.softDims
-  };
+  const dims = { ...scores.logicDims, ...scores.softDims };
   const out = {};
-  for (const [dim, score] of Object.entries(dims)) {
-    out[dim] = describe(dim, score);
-  }
+  for (const [dim, score] of Object.entries(dims)) out[dim] = describe(dim, score);
   return out;
 }
 
 function scoreAll(answers) {
   const logic = scoreLogic(answers.logic || {});
-  const soft = scoreSoft(answers.soft || {});
+  const soft  = scoreSoft(answers.soft || {});
   const indices = aggregateIndices(logic, soft);
-
-  const perDim = {
-    ...logic,
-    ...soft
-  };
 
   const summary = {
     indices,
@@ -318,22 +202,12 @@ function scoreAll(answers) {
         [COGNITIVE.NUM]: logic[COGNITIVE.NUM],
         [COGNITIVE.PROB]: logic[COGNITIVE.PROB]
       },
-      softDims: Object.fromEntries(
-        Object.values(SOFT).map(d => [d, soft[d]])
-      )
+      softDims: Object.fromEntries(Object.keys(soft).map(d => [d, soft[d]]))
     })
   };
 
-  return {
-    logic,
-    soft,
-    indices,
-    summary
-  };
+  return { logic, soft, indices, summary };
 }
 
-module.exports = {
-  scoreAll,
-  COGNITIVE,
-  SOFT
-};
+module.exports = { scoreAll, COGNITIVE, SOFT };
+

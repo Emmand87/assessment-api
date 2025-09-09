@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <title>Assessment PM e-learning</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- UI minima -->
   <style>
     body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background: #f7f7fb; color: #222; }
     .container { max-width: 920px; margin: 24px auto; padding: 16px; background: #fff; border-radius: 12px; box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
@@ -19,7 +18,7 @@
     .outline { background: #fff; border: 1px solid #ddd; }
     .footer { margin-top: 24px; display: flex; gap: 12px; }
     label { display: block; margin: 6px 0; }
-    input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
+    input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; }
     .muted { color: #666; font-size: 13px; }
     .badge { display:inline-block; background:#eef3ff; color:#2f6fed; padding:2px 8px; border-radius:999px; font-size:12px; }
     .sticky { position: sticky; bottom: 12px; background: #fff; padding: 8px; border-radius: 10px; box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
@@ -29,8 +28,8 @@
     hr { border: none; border-top: 1px solid #eee; margin: 20px 0; }
     .radio { display:flex; align-items:center; gap:8px; padding:8px; border:1px solid #eaeaea; border-radius:8px; background:white; }
     .header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .alert { padding:12px; border-radius:8px; background:#fff3cd; border:1px solid #ffeeba; color:#856404; }
   </style>
-  <!-- React via CDN + Babel per JSX in-browser -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -41,13 +40,39 @@
   </div>
 
   <script type="text/babel">
+    const { useState, useMemo, useEffect, useRef } = React;
 
-    const { useState, useMemo } = React;
+    // ------------------- Token da URL + Validazione -------------------
+    function useTokenValidation() {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('t') || '';
+      const [state, setState] = useState({ loading: !!token, ok: false, info: null, error: null });
 
-    /** ===================== DOMANDE LOGICA ===================== */
+      useEffect(() => {
+        let mounted = true;
+        (async () => {
+          if (!token) { setState({ loading:false, ok:false, info:null, error:'Token mancante nel link.' }); return; }
+          try {
+            const res = await fetch(`/api/token/${token}`);
+            const data = await res.json();
+            if (!mounted) return;
+            if (data.ok) setState({ loading:false, ok:true, info:data, error:null });
+            else setState({ loading:false, ok:false, info:null, error:data.reason || 'Token non valido.' });
+          } catch (e) {
+            if (!mounted) return;
+            setState({ loading:false, ok:false, info:null, error:'Errore di validazione token.' });
+          }
+        })();
+        return () => { mounted = false; };
+      }, [token]);
+
+      return { token, ...state };
+    }
+
+    // ------------------- Domande -------------------
     const logicQuestions = [
       { id: 'q1', text: 'Qual è il numero successivo nella sequenza: 2, 4, 8, 16, ?', options: ['30','32','34','28'] },
-      { id: 'q2', text: 'Serie: 1, 1, 2, 3, 5, 8, 13, ? (Fibonacci)', options: ['18','20','21','13'] },
+      { id: 'q2', text: 'Serie: 1, 1, 2, 3, 5, 8, 13, ?', options: ['18','20','21','13'] },
       { id: 'q3', text: 'Puzzle logico: se lo schema è A→B, B→C, C→D, quale viene dopo C?', options: ['A','B','C','D'] },
       { id: 'q4', text: 'Calcolo: 9 + 9 + 9 = ?', options: ['26','27','28','29'] },
       { id: 'q5', text: 'Calcolo: 3 × 4 = ?', options: ['10','11','12','13'] },
@@ -55,10 +80,7 @@
       { id: 'q7', text: 'Ottimizzazione: 36 ore da allocare su 2 moduli eguali. Ore per modulo?', options: ['9','12','18','24'] },
       { id: 'q8', text: 'Logica condizionale: "Se piove, porto l’ombrello". Piove. Porto l’ombrello? ', options: ['Vero','Falso'] }
     ];
-    // NB: le chiavi corrette sono definite sul server.
 
-    /** ===================== SCENARI SOFT ===================== */
-    // Le opzioni sono A/B/C/D per allineamento con lo scoring server.
     const softScenarios = [
       { id:'s1', title:'Gestione del tempo', prompt:'Hai 4 task in scadenze diverse. Cosa fai per prima cosa?', options:[
         {key:'A', label:'Classifico con matrice urgenza/importanza e timeboxing'},
@@ -110,27 +132,47 @@
       ]}
     ];
 
-    /** ===================== APP ===================== */
-
     function RadioRow({name, value, onChange, opt}) {
       return (
         <label className="radio">
-          <input
-            type="radio"
-            name={name}
-            value={opt.key || opt}
-            checked={value === (opt.key || opt)}
-            onChange={e => onChange(e.target.value)}
-          />
+          <input type="radio" name={name} value={opt.key || opt}
+                 checked={value === (opt.key || opt)}
+                 onChange={e => onChange(e.target.value)} />
           <span>{opt.label || opt}</span>
         </label>
       );
     }
 
+    function usePerItemTimers(ids) {
+      const [times, setTimes] = useState({});   // { id: ms }
+      const startRef = useRef({});              // { id: ts }
+
+      useEffect(() => {
+        const now = Date.now();
+        const obj = {};
+        ids.forEach(id => { obj[id] = now; });
+        startRef.current = obj;
+      }, [JSON.stringify(ids)]);
+
+      const markAnswered = (id) => {
+        const start = startRef.current[id];
+        if (start && times[id] == null) {
+          const ms = Date.now() - start;
+          setTimes(t => ({ ...t, [id]: ms }));
+        }
+      };
+      return { times, markAnswered };
+    }
+
     function LogicBlock({ onDone }) {
       const [answers, setAnswers] = useState({});
-
       const allAnswered = logicQuestions.every(q => answers[q.id]);
+      const { times, markAnswered } = usePerItemTimers(logicQuestions.map(q => q.id));
+
+      const onSelect = (qid, value) => {
+        setAnswers(a => ({...a, [qid]: value}));
+        markAnswered(qid);
+      };
 
       return (
         <div className="card">
@@ -140,19 +182,14 @@
               <div><strong>{q.text}</strong></div>
               <div className="options grid grid-2">
                 {q.options.map(opt => (
-                  <RadioRow
-                    key={opt}
-                    name={q.id}
-                    value={answers[q.id] || ''}
-                    onChange={(v) => setAnswers(a => ({...a, [q.id]: v}))}
-                    opt={{key: opt, label: opt}}
-                  />
+                  <RadioRow key={opt} name={q.id} value={answers[q.id] || ''} onChange={(v)=>onSelect(q.id, v)} opt={{key: opt, label: opt}} />
                 ))}
               </div>
+              {times[q.id]!=null && <div className="muted">Tempo: {times[q.id]} ms</div>}
             </div>
           ))}
           <div className="footer">
-            <button className="primary" disabled={!allAnswered} onClick={() => onDone(answers)}>Conferma sezione</button>
+            <button className="primary" disabled={!allAnswered} onClick={() => onDone(answers, times)}>Conferma sezione</button>
             <span className="muted">{allAnswered ? 'Pronto a procedere' : 'Rispondi a tutte le domande'}</span>
           </div>
         </div>
@@ -162,6 +199,12 @@
     function SoftBlock({ onDone }) {
       const [answers, setAnswers] = useState({});
       const allAnswered = softScenarios.every(s => answers[s.id]);
+      const { times, markAnswered } = usePerItemTimers(softScenarios.map(s => s.id));
+
+      const onSelect = (sid, value) => {
+        setAnswers(a => ({...a, [sid]: value}));
+        markAnswered(sid);
+      };
 
       return (
         <div className="card">
@@ -171,19 +214,14 @@
               <div><strong>{s.title}:</strong> {s.prompt}</div>
               <div className="options">
                 {s.options.map(opt => (
-                  <RadioRow
-                    key={opt.key}
-                    name={s.id}
-                    value={answers[s.id] || ''}
-                    onChange={(v) => setAnswers(a => ({...a, [s.id]: v}))}
-                    opt={opt}
-                  />
+                  <RadioRow key={opt.key} name={s.id} value={answers[s.id] || ''} onChange={(v)=>onSelect(s.id, v)} opt={opt} />
                 ))}
               </div>
+              {times[s.id]!=null && <div className="muted">Tempo: {times[s.id]} ms</div>}
             </div>
           ))}
           <div className="footer">
-            <button className="primary" disabled={!allAnswered} onClick={() => onDone(answers)}>Conferma sezione</button>
+            <button className="primary" disabled={!allAnswered} onClick={() => onDone(answers, times)}>Conferma sezione</button>
             <span className="muted">{allAnswered ? 'Pronto a inviare' : 'Completa tutti gli scenari'}</span>
           </div>
         </div>
@@ -191,28 +229,35 @@
     }
 
     function App() {
+      const { token, loading, ok, info, error } = useTokenValidation();
       const [step, setStep] = useState(0);
       const [candidate, setCandidate] = useState({ name:'', email:'' });
       const [logic, setLogic] = useState(null);
+      const [logicTimes, setLogicTimes] = useState({});
       const [soft, setSoft] = useState(null);
+      const [softTimes, setSoftTimes] = useState({});
       const [result, setResult] = useState(null);
       const [startTs] = useState(Date.now());
-      const baseUrl = '';
 
-      const canStart = candidate.name.trim().length > 1;
+      const canStart = candidate.name.trim().length > 1 && ok;
 
       const sendAll = async () => {
         const body = {
+          token,
           candidate,
           answers: { logic, soft },
           meta: {
             durationSec: Math.round((Date.now() - startTs) / 1000),
-            userAgent: navigator.userAgent
+            userAgent: navigator.userAgent,
+            times: {
+              logic: logicTimes,
+              soft: softTimes
+            }
           }
         };
-        const res = await fetch(baseUrl + '/api/submit', {
+        const res = await fetch('/api/submit', {
           method: 'POST',
-          headers: { 'Content-Type':'application/json' },
+          headers: { 'Content-Type':'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify(body)
         });
         if (!res.ok) {
@@ -222,11 +267,31 @@
         return await res.json();
       };
 
+      if (loading) {
+        return (
+          <>
+            <div className="header"><h1>Assessment Project Manager • <span className="muted">Verifica token…</span></h1></div>
+            <hr/>
+            <div className="card"><div className="muted">Controllo accesso…</div></div>
+          </>
+        );
+      }
+
+      if (!ok) {
+        return (
+          <>
+            <div className="header"><h1>Assessment Project Manager</h1></div>
+            <hr/>
+            <div className="alert">Accesso non consentito: {error || 'token assente/invalidato'}</div>
+          </>
+        );
+      }
+
       return (
         <>
           <div className="header">
-            <h1>Assessment Project Manager (e-learning) • <span className="muted">Prototipo</span></h1>
-            <span className="badge">No install</span>
+            <h1>Assessment Project Manager (e-learning)</h1>
+            <span className="badge">Token valido</span>
           </div>
           <hr/>
 
@@ -235,10 +300,10 @@
               <h2>Dati Candidato</h2>
               <div className="grid grid-2">
                 <label>Nome e Cognome
-                  <input value={candidate.name} onChange={e => setCandidate(c => ({...c, name: e.target.value}))} placeholder="Es. Maria Rossi" />
+                  <input value={candidate.name} onChange={e => setCandidate(c => ({...c, name: e.target.value}))} placeholder={info?.name || "Es. Maria Rossi"} />
                 </label>
                 <label>Email (facoltativa)
-                  <input value={candidate.email} onChange={e => setCandidate(c => ({...c, email: e.target.value}))} placeholder="maria.rossi@example.com" />
+                  <input value={candidate.email} onChange={e => setCandidate(c => ({...c, email: e.target.value}))} placeholder={info?.email || "maria.rossi@example.com"} />
                 </label>
               </div>
               <div className="footer">
@@ -248,15 +313,15 @@
             </div>
           )}
 
-          {step === 1 && <LogicBlock onDone={(ans) => { setLogic(ans); setStep(2); }} />}
-          {step === 2 && <SoftBlock onDone={(ans) => { setSoft(ans); setStep(3); }} />}
+          {step === 1 && <LogicBlock onDone={(ans, times) => { setLogic(ans); setLogicTimes(times); setStep(2); }} />}
+          {step === 2 && <SoftBlock  onDone={(ans, times) => { setSoft(ans); setSoftTimes(times); setStep(3); }} />}
 
           {step === 3 && (
             <div className="card sticky">
               <div style={{display:'flex', gap:12, alignItems:'center', justifyContent:'space-between', flexWrap:'wrap'}}>
                 <div>
                   <strong>Pronto all’invio</strong>
-                  <div className="muted">Le risposte saranno valutate e verrà generato un PDF con indicatori e descrizioni.</div>
+                  <div className="muted">Verrà generato un PDF con indicatori, descrizioni e tempi per item.</div>
                 </div>
                 <button className="primary" onClick={async () => {
                   try {
